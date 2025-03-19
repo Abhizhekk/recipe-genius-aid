@@ -18,13 +18,28 @@ import {
   Video,
   Share2
 } from 'lucide-react';
+import SearchBar from '@/components/SearchBar';
 
 const Index = () => {
   const [isLoaded, setIsLoaded] = useState(false);
+  const [activeSection, setActiveSection] = useState('generator');
 
   useEffect(() => {
     setIsLoaded(true);
   }, []);
+
+  const scrollToSection = (sectionId: string) => {
+    setActiveSection(sectionId);
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleSearch = (query: string, type: 'ingredients' | 'recipe') => {
+    scrollToSection('generator');
+    // The actual search will be handled by the RecipeGenerator component
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -48,10 +63,19 @@ const Index = () => {
               <p className="text-lg text-muted-foreground mb-8">
                 Transform your available ingredients into delicious recipes with our AI-powered cooking assistant. No more food waste, no more recipe hunting.
               </p>
+              
+              <div className="mb-8 max-w-xl mx-auto">
+                <SearchBar 
+                  onSearch={handleSearch} 
+                  placeholder="Search for recipes like 'Pasta Carbonara' or ingredients..."
+                />
+              </div>
+              
               <div className="flex flex-col sm:flex-row justify-center gap-4">
                 <Button 
                   size="lg" 
                   className="bg-primary hover:bg-primary/90 text-white shadow-button transition-all"
+                  onClick={() => scrollToSection('generator')}
                 >
                   Get Started
                 </Button>
@@ -59,6 +83,7 @@ const Index = () => {
                   variant="outline" 
                   size="lg" 
                   className="border-primary/20 text-primary hover:bg-primary/5"
+                  onClick={() => scrollToSection('features')}
                 >
                   How It Works
                 </Button>
@@ -151,7 +176,7 @@ const Index = () => {
         </section>
         
         {/* Saved Recipes Section */}
-        <section className="py-20 px-6 md:px-10">
+        <section id="saved-recipes" className="py-20 px-6 md:px-10">
           <div className="max-w-3xl mx-auto">
             <SavedRecipes />
           </div>
@@ -168,6 +193,7 @@ const Index = () => {
             <Button 
               size="lg" 
               className="bg-primary hover:bg-primary/90 text-white shadow-button transition-all"
+              onClick={() => scrollToSection('generator')}
             >
               Generate Your First Recipe
             </Button>

@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,9 +14,11 @@ import {
   Loader2, 
   Carrot, 
   UtensilsCrossed, 
-  Timer 
+  Timer,
+  HelpCircle
 } from 'lucide-react';
 import RecipeCard from './RecipeCard';
+import SearchBar from './SearchBar';
 
 const dietaryOptions = [
   'Vegetarian',
@@ -53,8 +54,14 @@ const RecipeGenerator = () => {
   const [difficulty, setDifficulty] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [recipe, setRecipe] = useState<Recipe | null>(null);
+  const [showHelp, setShowHelp] = useState(true);
   
   const inputRef = useRef<HTMLInputElement>(null);
+  const tabsRef = useRef<{ [key: string]: HTMLElement | null }>({
+    ingredients: null,
+    preferences: null,
+    result: null
+  });
 
   const handleAddIngredient = () => {
     if (inputValue.trim() !== '' && !ingredients.includes(inputValue.trim())) {
@@ -83,6 +90,45 @@ const RecipeGenerator = () => {
     }
   };
 
+  const handleSearch = (query: string, type: 'ingredients' | 'recipe') => {
+    if (type === 'ingredients') {
+      const ingredientList = query.split(',').map(item => item.trim()).filter(Boolean);
+      setIngredients([...new Set([...ingredients, ...ingredientList])]);
+      goToTab('ingredients');
+    } else {
+      setIsLoading(true);
+      setRecipe(null);
+      
+      setTimeout(() => {
+        generateRecipe({
+          ingredients: query.split(' '),
+          searchTerm: query
+        })
+        .then(generatedRecipe => {
+          if (generatedRecipe) {
+            setRecipe(generatedRecipe);
+            goToTab('result');
+            toast.success(`Recipe found: ${generatedRecipe.title}`);
+          }
+        })
+        .catch(error => {
+          console.error('Error searching recipe:', error);
+          toast.error('Failed to find recipe. Please try again.');
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+      }, 1000);
+    }
+  };
+
+  const goToTab = (tabName: string) => {
+    const tabElement = document.querySelector(`[data-value="${tabName}"]`) as HTMLElement;
+    if (tabElement) {
+      tabElement.click();
+    }
+  };
+
   const handleGenerateRecipe = async () => {
     if (ingredients.length === 0) {
       toast.error('Please add at least one ingredient');
@@ -104,6 +150,7 @@ const RecipeGenerator = () => {
       if (generatedRecipe) {
         setRecipe(generatedRecipe);
         toast.success('Recipe generated successfully!');
+        goToTab('result');
       }
     } catch (error) {
       console.error('Error generating recipe:', error);
@@ -121,21 +168,66 @@ const RecipeGenerator = () => {
     setRecipe(null);
   };
 
+  useEffect(() => {
+    if (showHelp) {
+      const timer = setTimeout(() => {
+        setShowHelp(false);
+      }, 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [showHelp]);
+
   return (
     <div className="w-full max-w-6xl mx-auto py-8">
+      <div className="mb-6">
+        <SearchBar onSearch={handleSearch} placeholder="Search by recipe name or ingredients..." />
+      </div>
+      
+      {showHelp && (
+        <div className="mb-6 p-4 bg-primary/10 rounded-lg border border-primary/20 flex items-start gap-3 animate-fade-in">
+          <HelpCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm">
+              <strong>Getting Started:</strong> Search for recipes by name, add ingredients you have, or set your dietary preferences. 
+              We'll help you find the perfect recipe!
+            </p>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-6 w-6 rounded-full" 
+            onClick={() => setShowHelp(false)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+      
       <Card className="overflow-hidden border border-border/50 shadow-subtle transition-all duration-300 hover:shadow-elevation bg-card/80 backdrop-blur-sm">
         <CardContent className="p-6">
           <Tabs defaultValue="ingredients" className="w-full">
             <TabsList className="grid grid-cols-3 mb-8">
-              <TabsTrigger value="ingredients" className="flex items-center gap-2">
+              <TabsTrigger 
+                value="ingredients" 
+                className="flex items-center gap-2"
+                ref={el => tabsRef.current.ingredients = el}
+              >
                 <Carrot className="h-4 w-4" />
                 <span>Ingredients</span>
               </TabsTrigger>
-              <TabsTrigger value="preferences" className="flex items-center gap-2">
+              <TabsTrigger 
+                value="preferences" 
+                className="flex items-center gap-2"
+                ref={el => tabsRef.current.preferences = el}
+              >
                 <UtensilsCrossed className="h-4 w-4" />
                 <span>Preferences</span>
               </TabsTrigger>
-              <TabsTrigger value="result" className="flex items-center gap-2">
+              <TabsTrigger 
+                value="result" 
+                className="flex items-center gap-2"
+                ref={el => tabsRef.current.result = el}
+              >
                 <Timer className="h-4 w-4" />
                 <span>Result</span>
               </TabsTrigger>

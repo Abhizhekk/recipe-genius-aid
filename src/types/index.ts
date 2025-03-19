@@ -52,4 +52,14 @@ export interface RecipeGeneratorParams {
   dietary?: string[];
   cuisine?: string;
   difficulty?: string;
+  searchTerm?: string; // Added for recipe name search
+}
+
+export interface PracticeRecipe {
+  id: string;
+  title: string;
+  description: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  timeToPractice: number; // in minutes
+  skillsLearned: string[];
 }

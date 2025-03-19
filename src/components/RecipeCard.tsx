@@ -16,11 +16,13 @@ import {
   Bookmark, 
   PlayCircle,
   InfoIcon,
-  UtensilsCrossed 
+  UtensilsCrossed,
+  Camera
 } from 'lucide-react';
 
 import CookingTimer from './CookingTimer';
 import NutritionFacts from './NutritionFacts';
+import CookingFeedback from './CookingFeedback';
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -35,6 +37,8 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
   const [nutritionalAnalysis, setNutritionalAnalysis] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [isCooking, setIsCooking] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [recipeImage, setRecipeImage] = useState<string | null>(null);
   
   const { toast: uiToast } = useToast();
 
@@ -99,17 +103,52 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
 
   const stopCooking = () => {
     setIsCooking(false);
+    setShowFeedback(true);
+  };
+
+  const closeFeedback = () => {
+    setShowFeedback(false);
+  };
+
+  const generatePractices = () => {
+    toast.success("Generating practice recipes for you!");
+    closeFeedback();
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    if (!file.type.startsWith('image/')) {
+      uiToast({
+        title: "Invalid file type",
+        description: "Please upload an image file",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setRecipeImage(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const totalTime = recipe.prepTime + recipe.cookTime;
   
-  // Use placeholder image since the API doesn't provide real images
-  const placeholderImage = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
+  // Use uploaded image or placeholder image
+  const placeholderImage = recipeImage || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
 
   return (
     <div className="w-full">
       {isCooking ? (
         <CookingTimer recipe={recipe} onClose={stopCooking} />
+      ) : showFeedback ? (
+        <CookingFeedback recipe={recipe} onClose={closeFeedback} onGeneratePractice={generatePractices} />
       ) : (
         <Card className="overflow-hidden border border-border/50 shadow-subtle bg-card/80 backdrop-blur-sm">
           <div className="relative h-64 w-full overflow-hidden">
@@ -119,6 +158,17 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
               className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+            
+            <label className="absolute top-3 right-3 bg-black/30 rounded-full p-2 cursor-pointer hover:bg-black/50 transition-colors">
+              <Camera className="h-5 w-5 text-white" />
+              <input 
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageUpload}
+              />
+            </label>
+            
             <div className="absolute bottom-0 left-0 p-6">
               <div className="flex flex-wrap gap-2 mb-2">
                 {recipe.tags.slice(0, 3).map((tag, index) => (
